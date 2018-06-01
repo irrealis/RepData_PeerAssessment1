@@ -5,17 +5,162 @@ output:
     keep_md: true
 ---
 
+This is an exploratory analysis for peer-assignment 1 in _Reproducible Research_, the fifth course of the _Data Science_ track from Johns Hopkins University on [Coursera](https://www.coursera.org/).
+
+- See the course home page at https://www.coursera.org/learn/reproducible-research.
+- This analysis is on GitHub at https://github.com/irrealis/ds05-reproducible-research-pa1.
+
+## Introduction
+
+This assignment analyzes data from a personal activity monitor worn by an anonymous individual during the two months of October and November, 2012. The data are contained in .zip archive [_activity.zip_](https://github.com/irrealis/ds05-reproducible-research-pa1/blob/master/activity.zip) in the above GitHub repo, forked from a template repo by the course instructor, and are presented as time-series observations of number of steps taken in each five-minute interval for each day. Three variables are observed:
+
+- `steps`: Number of steps taken during the interval (missing values coded as `NA`).
+
+- `date`: Date of measurement, in YYYY-MM-DD format.
+
+- `interval`: Interval identifier, in HHMM format with leading zeros removed, corresponding to time of day. The first measurement interval of each day appears to begin at midnight.
+
+The following questions are addressed in this analysis:
+
+- What is the mean total number of steps taken per day, averaged over all days?
+
+- What is the average daily activity pattern, averaged for each interval over all days? Which interval contains the maximum average number of steps?
+
+- When missing values are imputed, does the daily activity pattern change? What is the impact of imputing?
+
+- Are there differences in activity patterns between weekdays and weekends?
+
+This assignment exercises [R Markdown](https://rmarkdown.rstudio.com/) and [knitr](https://yihui.name/knitr/) as part of a literate-programming strategy for reproducible research. 
+
 
 ## Loading and preprocessing the data
 
+Load raw data, extracting raw data if missing.
+
+```{r }
+zip_file <- "activity.zip"
+dat_file <- "activity.csv" 
+if(!file.exists(dat_file)){ unzip(zip_file) }
+raw_data <- read.csv(dat_file)
+```
 
 
-## What is mean total number of steps taken per day?
+Variable names:
+
+```{r }
+names(raw_data)
+```
+
+
+Head of dataset:
+
+```{r }
+head(raw_data)
+```
+
+
+Summaries:
+
+- Structure of dataset:
+  ```{r }
+  str(raw_data)
+  ```
+  So, 61 days of data, as expected.
+
+- How many unique interval IDs?
+
+  ```{r }
+  length(unique(raw_data$interval))
+  ```
+
+  This should be the same as the number of hours per day, times number of minutes per hour, divided by five minutes:
+
+  ```{r }
+  24*60/5
+  ```
+
+- Quartiles:
+
+  ```{r }
+  summary(raw_data)
+  ```
+
+  - So the lowest interval ID is `0`, corresponding to `00:00` o'clock, or midnight, and the highest interval ID is `2355`, corresponding to `23:55` o'clock, or five minutes before midnight.
+
+- How much missing data?
+
+  ```{r }
+  1 - mean(complete.cases(raw_data))
+  ```
+  
+Preprocessing:
+
+- These intervals will be easier to work with as factor levels for time-series plots. The dates will be easier to work with as `POSIXct` instances.
+
+  ```{r , message=F, warning=F}
+  library(dplyr)
+  library(lubridate)
+  activity_data <- raw_data %>%
+    mutate(interval = as.factor(interval)) %>%
+    mutate(date = ymd(date))
+  ```
+
+- Sanity check that `raw_data` and `activity_data` represent the same things:
+
+  ```{r }
+  str(raw_data)
+  ```
+  ```{r }
+  str(activity_data)
+  ```
+
+
+
+## What is the mean total number of steps taken per day?
+
+Total number of steps per day:
+
+```{r }
+total_steps_per_day <- with(activity_data, tapply(steps, date, function(v) sum(v, na.rm=T)))
+```
+
+Histogram of total number of steps per day:
+
+```{r }
+hist(total_steps_per_day, breaks = 15)
+```
+
+Summary providing median and mean of total steps per day:
+
+```{r }
+summary(total_steps_per_day)
+```
 
 
 
 ## What is the average daily activity pattern?
 
+Mean steps per interval, averaged over all days:
+
+```{r }
+mean_steps_per_interval <- with(activity_data, tapply(steps, interval, function(v) mean(v, na.rm=T)))
+```
+
+As time-series plot:
+
+```{r }
+plot(names(mean_steps_per_interval), mean_steps_per_interval, type='l')
+```
+
+Which interval contains the maximum number of average steps?
+
+```{r }
+max_interval <- which(mean_steps_per_interval == max(mean_steps_per_interval))
+max_average <- mean_steps_per_interval[max_interval]
+max_average
+```
+
+- So, the maximum is at 8:35 a.m. with average of `r max_average` steps.
 
 
 ## Imputing missing values
