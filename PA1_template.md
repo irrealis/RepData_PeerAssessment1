@@ -40,7 +40,8 @@ The following R packages are used:
 - `lubridate` is used to simplify date-related operations.
 - `reshape2` is used for its `melt` function.
 
-```{r , message=F}
+
+```r
 library(data.table)
 library(dplyr)
 library(ggplot2)
@@ -50,7 +51,8 @@ library(reshape2)
   
 Raw data are decompressed (if needed), then loaded.
 
-```{r }
+
+```r
 zip_file <- "activity.zip"
 dat_file <- "activity.csv" 
 if(!file.exists(dat_file)){ unzip(zip_file) }
@@ -64,7 +66,8 @@ The following preprocessing steps are taken:
 - The `date` column is converted to `Date` in order to show dates on the X axes of later plots.
 - The data are converted to `data.table` for simplified syntax.
 
-```{r }
+
+```r
 activity <- raw_data %>%
   mutate(
     interval = as.factor(interval),
@@ -79,13 +82,15 @@ activity <- raw_data %>%
 
 To estimate this mean, daily steps are totaled, and will subsequently be averaged.
 
-```{r }
+
+```r
 daily_steps <- aggregate(steps ~ date, activity, sum)
 ```
 
 The distribution of daily step totals is visualized via histogram:
 
-```{r }
+
+```r
 ggplot(daily_steps, aes(steps)) +
   geom_histogram(bins=20) +
   labs(
@@ -95,18 +100,29 @@ ggplot(daily_steps, aes(steps)) +
   )
 ```
 
-```{r , echo=F, results="hide"}
-mean_daily_steps <- mean(daily_steps$steps)
-median_daily_steps <- median(daily_steps$steps)
-```
+![](PA1_template_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
 
-Mean and median daily steps are estimated as `r sprintf("%.0f", mean_daily_steps)` and `r sprintf("%.0f", median_daily_steps)`, respectively:
 
-```{r }
+
+Mean and median daily steps are estimated as 10766 and 10765, respectively:
+
+
+```r
 mean_daily_steps <- mean(daily_steps$steps)
 median_daily_steps <- median(daily_steps$steps)
 mean_daily_steps
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median_daily_steps
+```
+
+```
+## [1] 10765
 ```
 
 
@@ -115,9 +131,10 @@ median_daily_steps
 The following are done to prepare data for visualization:
 
 - Steps taken from midnight to 00:05 are averaged over all days. This is repeated for each subsequent five-minute interval.
-- Interval IDs are converted to a `time_of_day` column of datatype `POSIXct`, in order to show time of day on the X axis of the subsequent plot. (Note: a "placeholder" date of `today()==``r today()` is used to satisfy the plotting system.)
+- Interval IDs are converted to a `time_of_day` column of datatype `POSIXct`, in order to show time of day on the X axis of the subsequent plot. (Note: a "placeholder" date of `today()==`2018-06-05 is used to satisfy the plotting system.)
 
-```{r }
+
+```r
 mean_steps_per_interval <- aggregate(
   steps ~ interval,
   activity,
@@ -138,7 +155,8 @@ mean_steps_per_interval <- aggregate(
 
 Activity over the course of an average day is visualized as a time-series plot:
 
-```{r }
+
+```r
 ggplot(mean_steps_per_interval, aes(x=time_of_day, y=mean_steps, group=1)) +
   geom_line() +
   scale_x_datetime(date_breaks = "2 hour", date_labels = "%H:%M") +
@@ -149,33 +167,40 @@ ggplot(mean_steps_per_interval, aes(x=time_of_day, y=mean_steps, group=1)) +
   )
 ```
 
-```{r , echo=F, results="hide"}
-max_mean_steps_per_interval <- mean_steps_per_interval %>%
-  filter(mean_steps == max(mean_steps))
-```
+![](PA1_template_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
 
-On an average day, the maximum number of steps (`r sprintf("%.0f", max_mean_steps_per_interval$mean_steps)`) is taken at `r format(max_mean_steps_per_interval$time_of_day, "%H:%M")`:
 
-  ```{r }
+
+On an average day, the maximum number of steps (206) is taken at 08:35:
+
+  
+  ```r
   max_mean_steps_per_interval <- mean_steps_per_interval %>%
     filter(mean_steps == max(mean_steps))
   max_mean_steps_per_interval
+  ```
+  
+  ```
+  ##   interval mean_steps         time_of_day
+  ## 1      835   206.1698 2018-06-05 08:35:00
   ```
 
 
 ## Imputing missing values
 
-```{r , echo=F, results="hide"}
-is_missing <- is.na(activity$steps)
-missing_count <- sum(is_missing)
-```
 
-`r missing_count` values are missing from the `steps` column, and will be imputed.
 
-```{r }
+2304 values are missing from the `steps` column, and will be imputed.
+
+
+```r
 is_missing <- is.na(activity$steps)
 missing_count <- sum(is_missing)
 missing_count
+```
+
+```
+## [1] 2304
 ```
 
 Per assignment instructions, instead of a sophisticated imputation, the mean number of steps in a given five-minute interval will be used to impute missing values in that interval.
@@ -183,7 +208,8 @@ Per assignment instructions, instead of a sophisticated imputation, the mean num
 - A new column `mean_steps` is added to table `activity` using data from table `mean_steps_per_interval` by merging the latter into the former, joining on `interval`.
 - Missing entries in column `steps` are replaced using `mean_steps` column data from the same row.
   
-```{r }
+
+```r
 imputed_by_interval <- merge(
   activity,
   mean_steps_per_interval,
@@ -200,7 +226,8 @@ The following steps are taken to prepare for visualization:
 - After melting, the `steps` column contains pre-impute `NA`s, which are filtered out.
 - The result is converted to `data.table`, permitting simplified syntax.
 
-```{r }
+
+```r
 daily_steps_post_impute <- aggregate(
   steps ~ date,
   imputed_by_interval,
@@ -216,7 +243,8 @@ daily_steps_post_impute <- aggregate(
   
 The pre- and post-impute histograms are plotted side-by-side for comparison.
   
-```{r }
+
+```r
 ggplot(daily_steps_post_impute, aes(steps, fill = variable)) +
   geom_histogram(bins = 20, position = "dodge") +
   labs(
@@ -225,19 +253,15 @@ ggplot(daily_steps_post_impute, aes(steps, fill = variable)) +
     y = "Count"
   )
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
   
-```{r , echo=F, results="hide"}
-mean_daily_steps_post_impute <- mean(
-  daily_steps_post_impute[variable == "post_impute", steps]
-)
-median_daily_steps_post_impute <- median(
-  daily_steps_post_impute[variable == "post_impute", steps]
-)
-```
 
-The above histograms are surprisingly identical with one exception: the count is approximately doubled for the post-impute bin containing the mean. Post-impute mean and median daily steps are estimated as `r sprintf("%.0f", mean_daily_steps_post_impute)` and `r sprintf("%.0f", median_daily_steps_post_impute)`, respectively. That the pre- and post-impute mean estimates are identical is again surprising, but consistent with the histogram comparison. The post-impute median estimate equals the estimated mean.
 
-```{r }
+The above histograms are surprisingly identical with one exception: the count is approximately doubled for the post-impute bin containing the mean. Post-impute mean and median daily steps are estimated as 10766 and 10766, respectively. That the pre- and post-impute mean estimates are identical is again surprising, but consistent with the histogram comparison. The post-impute median estimate equals the estimated mean.
+
+
+```r
 mean_daily_steps_post_impute <- mean(
   daily_steps_post_impute[variable == "post_impute", steps]
 )
@@ -245,14 +269,40 @@ median_daily_steps_post_impute <- median(
   daily_steps_post_impute[variable == "post_impute", steps]
 )
 mean_daily_steps
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 mean_daily_steps_post_impute
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median_daily_steps
+```
+
+```
+## [1] 10765
+```
+
+```r
 median_daily_steps_post_impute
+```
+
+```
+## [1] 10766.19
 ```
 
 The reasons for identical mean estimates and identical histograms, save for one doubled bin count, is revealed by plotting the number of valid observations per day:
   
-```{r }
+
+```r
 daily_valid_entries <- aggregate(
   steps ~ date,
   activity,
@@ -268,8 +318,10 @@ ggplot(daily_valid_entries, aes(x = date, y = complete_cases)) +
     y = "Valid observations"
   )
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
   
-On eight days, all entries are missing. For all other days, all entries are valid (numbering `r max(daily_valid_entries$complete_cases)` per day). Thus exactly eight complete average days were imputed, which has these effects:
+On eight days, all entries are missing. For all other days, all entries are valid (numbering 288 per day). Thus exactly eight complete average days were imputed, which has these effects:
 
 - Because the mean of the mean is the identity operation, and eight complete average days were imputed, the estimated mean is unchanged post-impute.
 - The count of the histogram bin containing the mean is increased by eight, corresponding to the eight imputed average days.
@@ -279,7 +331,8 @@ On eight days, all entries are missing. For all other days, all entries are vali
 
 This will be answered by comparing time-series activity-level plots for weekdays and weekends. To begin, a new factor variable `weekday_or_weekend` is added.
 
-```{r }
+
+```r
 activity_weekday_or_weekend <- activity %>%
   mutate(
     weekday_or_weekend = factor(
@@ -297,7 +350,8 @@ To prepare for visualization, the following steps are taken:
 - Interval step counts are averaged for weekdays and weekends.
 - Interval IDs are converted to `time_of_day` in order to show time of day on the X axis.
 
-```{r }
+
+```r
 mean_steps_per_interval_and_weekday_or_weekend <- aggregate(
   steps ~ interval + weekday_or_weekend,
   activity_weekday_or_weekend,
@@ -318,7 +372,8 @@ mean_steps_per_interval_and_weekday_or_weekend <- aggregate(
 
 Weekday and weekend activity are visualized for comparison using a panel of time-series plots:
 
-```{r }
+
+```r
 ggplot(
   mean_steps_per_interval_and_weekday_or_weekend,
   aes(x=time_of_day, y=mean_steps, group=1)
@@ -333,20 +388,24 @@ ggplot(
   )
 ```
 
-The `r format(max_mean_steps_per_interval$time_of_day, "%H:%M")` spike in average daily activity level seems well-preserved in the weekday time-series plot, but less so in the weekend plot. Moreover, compared to weekdays, weekend activity seems to generally increase during waking hours.
+![](PA1_template_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+
+The 08:35 spike in average daily activity level seems well-preserved in the weekday time-series plot, but less so in the weekend plot. Moreover, compared to weekdays, weekend activity seems to generally increase during waking hours.
 
 
 ## Final rendering of this document
 
 Although assigment instructions state `knitr::knit2html` should be used to render this document, doing so triggers the following error:
 
-```{r , eval=F}
+
+```r
 knitr::knit2html('PA1_template.Rmd')
 ```
 
 Thus `rmarkdown::render` will be used instead:
 
-```{r , eval=F}
+
+```r
 render('PA1_template.Rmd', output_format = 'html_document')
 ```
 
